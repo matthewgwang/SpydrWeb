@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Optional
 from uuid import uuid4
@@ -59,7 +59,7 @@ class CaseReport(BaseModel):
     recommended_action: Action = Action.ALLOW
     confidence_score: float = Field(0.0, ge=0.0, le=1.0)
     fast_pathed: bool = False
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     analyst_feedback: Optional[dict] = None
 
 
@@ -69,5 +69,5 @@ class AlertBundle(BaseModel):
     related_account_ids: list[str] = Field(default_factory=list)
     case_reports: list[CaseReport] = Field(default_factory=list)
     primary_fraud_type: FraudType = FraudType.UNKNOWN
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str = "open"

@@ -7,7 +7,7 @@ Thread-safe for concurrent access from WebSocket feed and detection pipeline.
 from __future__ import annotations
 
 import threading
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 
 from sentinel.models.events import Event, EventType
@@ -68,8 +68,8 @@ class EventStream:
     ) -> list[Event]:
         """Return events for account_id in the last N minutes.
 
-        If before is None, uses datetime.utcnow() as reference.
+        If before is None, uses datetime.now(UTC) as reference.
         """
-        ref = before or datetime.utcnow()
+        ref = before or datetime.now(UTC)
         since = ref - timedelta(minutes=window_minutes)
         return self.query(account_id=account_id, since=since)

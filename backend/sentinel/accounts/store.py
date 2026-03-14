@@ -21,14 +21,16 @@ class AccountStore:
         return list(self._profiles.values())
 
     def create_from_persona(self, persona: dict) -> AccountProfile:
+        behavior = persona.get("behavior", {})
         profile = AccountProfile(
             account_id=persona["account_id"],
             name=persona.get("name", ""),
             age=persona.get("age"),
             location=persona.get("location"),
+            account_created=persona.get("account_created", ""),
             account_type=persona.get("account_type", "retail"),
-            devices=persona.get("behavior", {}).get("devices", []),
-            known_payees=persona.get("behavior", {}).get("known_payees", []),
+            devices=behavior.get("devices", []),
+            known_payees=behavior.get("known_payees", []),
         )
         self.save_profile(profile)
         return profile

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 class FeedbackStore:
@@ -18,7 +18,7 @@ class FeedbackStore:
                 "action": action,
                 "fraud_type": fraud_type,
                 "notes": notes,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 

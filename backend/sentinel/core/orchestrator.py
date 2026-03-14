@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from sentinel.config import settings
 from sentinel.models.events import Event, EventType
 from sentinel.models.layers import LayerSignal
 from sentinel.models.report import Action, CaseReport
@@ -98,16 +99,32 @@ class PipelineOrchestrator:
         )
         sender_profile.vulnerability = vulnerability
 
+        all_vuln_scores = {
+            p.account_id: p.vulnerability.score
+            for p in [sender_profile]
+            if p.vulnerability
+        }
         recipient_risk = self.recipient_scorer.compute_risk(
-            transaction.receiver_id, self.event_stream, self.brain_graph
+            transaction.receiver_id,
+            self.event_stream,
+            self.brain_graph,
+            vulnerability_scores=all_vuln_scores,
+            reference_time=transaction.timestamp,
         )
         receiver_profile.recipient_risk = recipient_risk
 
         # Step 4: Layer 1 (rules) always runs first
-        layer_1_signals = await self.layers[0].analyze(
-            transaction, sender_profile, receiver_profile,
-            self.event_stream, self.brain_graph,
-        )
+        layer_1 = self.layers[0] if self.layers and self.layers[0] else None
+        if layer_1 is not None:
+            layer_1_signals = await layer_1.analyze(
+                transaction, sender_profile, receiver_profile,
+                self.event_stream, self.brain_graph,
+            )
+        else:
+            layer_1_signals = [LayerSignal(
+                layer_id=1, layer_name="rules", triggered=False,
+                confidence=0.0, explanation="Layer 1 not yet implemented",
+            )]
 
         # Step 4.5: Fast-path check
         basic_graph_check = self.brain_graph.quick_check(
@@ -161,33 +178,55 @@ class PipelineOrchestrator:
         else:
             all_signals.append(layer_1_signals)
 
-        layer_map = {2: self.layers[1], 3: self.layers[2], 4: self.layers[3]}
-        for layer_id in test_plan.layer_priority:
-            if layer_id in layer_map:
-                signal = await layer_map[layer_id].analyze(
-                    transaction, sender_profile, receiver_profile,
-                    self.event_stream, self.brain_graph,
-                )
-                if isinstance(signal, list):
-                    all_signals.extend(signal)
-                else:
-                    all_signals.append(signal)
+        layer_map: dict[int, DetectionLayer | None] = {}
+        if len(self.layers) > 1:
+            layer_map[2] = self.layers[1]
+        if len(self.layers) > 2:
+            layer_map[3] = self.layers[2]
+        if len(self.layers) > 3:
+            layer_map[4] = self.layers[3]
 
-        # Step 7: Brain overlay
-        overlay_result = self.brain_overlay.analyze(
-            transaction=transaction,
-            sender_id=transaction.sender_id,
-            receiver_id=transaction.receiver_id,
-            vulnerability_scores={sender_profile.account_id: vulnerability.score},
-        )
+        for layer_id in test_plan.layer_priority:
+            layer = layer_map.get(layer_id)
+            if layer is None:
+                continue
+            signal = await layer.analyze(
+                transaction, sender_profile, receiver_profile,
+                self.event_stream, self.brain_graph,
+            )
+            if isinstance(signal, list):
+                all_signals.extend(signal)
+            else:
+                all_signals.append(signal)
+
+        # Step 7: Brain overlay (provided by Track B; safe default when absent)
+        if self.brain_overlay is not None:
+            overlay_result = self.brain_overlay.analyze(
+                transaction=transaction,
+                sender_id=transaction.sender_id,
+                receiver_id=transaction.receiver_id,
+                vulnerability_scores={sender_profile.account_id: vulnerability.score},
+            )
+        else:
+            overlay_result = {
+                "structural_signals": [],
+                "elevated": False,
+                "context": "",
+                "velocity_deviation": 1.0,
+            }
 
         # Step 8: Layer 5 synthesis (if any signals triggered)
         triggered_signals = [s for s in all_signals if s.triggered]
         evidence_brief = None
 
-        if triggered_signals or overlay_result.get("elevated", False):
+        layer_5 = self.layers[4] if len(self.layers) > 4 and self.layers[4] else None
+        if (triggered_signals or overlay_result.get("elevated", False)) and layer_5 is not None:
             relationship_timeline = None
-            if transaction.receiver_id not in sender_profile.known_payees:
+            if (
+                transaction.receiver_id not in sender_profile.known_payees
+                and self.brain_overlay is not None
+                and hasattr(self.brain_overlay, "relationship_analyzer")
+            ):
                 relationship_timeline = (
                     self.brain_overlay.relationship_analyzer.reconstruct_timeline(
                         transaction.sender_id,
@@ -196,7 +235,7 @@ class PipelineOrchestrator:
                     )
                 )
 
-            evidence_brief = await self.layers[4].synthesize(
+            evidence_brief = await layer_5.synthesize(
                 all_signals=all_signals,
                 sender_profile=sender_profile,
                 receiver_profile=receiver_profile,
@@ -244,6 +283,3 @@ class PipelineOrchestrator:
 
     def get_report(self, report_id: str) -> CaseReport | None:
         return next((r for r in self.case_reports if r.id == report_id), None)
-
-
-from sentinel.config import settings  # noqa: E402 — used by process()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 from uuid import uuid4
@@ -26,7 +26,7 @@ class EventType(str, Enum):
 
 class Event(BaseModel):
     id: str = Field(default_factory=lambda: uuid4().hex)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     step: int = 0
     event_type: EventType
     account_id: str

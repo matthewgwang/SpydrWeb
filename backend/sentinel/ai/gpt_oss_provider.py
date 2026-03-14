@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from sentinel.ai.cache import ResponseCache
 from sentinel.ai.provider import LLMProvider
@@ -14,7 +14,7 @@ from sentinel.config import settings
 
 class GPTOSSProvider(LLMProvider):
     def __init__(self) -> None:
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             api_key=settings.LLM_API_KEY,
             base_url=settings.LLM_BASE_URL,
         )
@@ -36,7 +36,7 @@ class GPTOSSProvider(LLMProvider):
                 return cached
 
         try:
-            resp = self.client.chat.completions.create(
+            resp = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -83,7 +83,7 @@ class GPTOSSProvider(LLMProvider):
         temperature: float = 0.3,
     ) -> dict:
         try:
-            resp = self.client.chat.completions.create(
+            resp = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 tools=tools,

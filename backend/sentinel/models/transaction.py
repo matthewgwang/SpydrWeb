@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -19,7 +19,7 @@ class TransactionType(str, Enum):
 class Transaction(BaseModel):
     id: str = Field(default_factory=lambda: uuid4().hex)
     step: int = 0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     type: TransactionType = TransactionType.PAYMENT
     amount: float
     sender_id: str

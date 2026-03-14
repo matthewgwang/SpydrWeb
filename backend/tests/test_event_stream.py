@@ -1,6 +1,6 @@
 """Tests for Layer 0 — EventStream."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -10,7 +10,7 @@ from sentinel.models.events import Event, EventType
 
 def test_append_and_get_all():
     stream = EventStream()
-    e = Event(step=1, timestamp=datetime.utcnow(), event_type=EventType.LOGIN, account_id="A001")
+    e = Event(step=1, timestamp=datetime.now(UTC), event_type=EventType.LOGIN, account_id="A001")
     stream.append(e)
     assert len(stream.get_all()) == 1
     assert stream.get_all()[0].account_id == "A001"
