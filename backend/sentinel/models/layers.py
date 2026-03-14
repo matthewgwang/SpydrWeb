@@ -14,6 +14,14 @@ class FraudType(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class ExploitationTactic(str, Enum):
+    FAMILY_COERCION = "family_coercion"
+    ROMANCE_SCAM = "romance_scam"
+    AUTHORITY_IMPERSONATION = "authority_impersonation"
+    PHONE_COACHING = "phone_coaching"
+    UNKNOWN = "unknown"
+
+
 class LayerSignal(BaseModel):
     """Standard output shape for every detection layer (1-5)."""
     layer_id: int
@@ -22,6 +30,7 @@ class LayerSignal(BaseModel):
     confidence: float = Field(0.0, ge=0.0, le=1.0)
     explanation: str = ""
     evidence: dict[str, Any] = Field(default_factory=dict)
+    severity: str = "low"
 
 
 class LayerResult(BaseModel):
@@ -39,7 +48,7 @@ class LayerResult(BaseModel):
 
 
 class TestPlan(BaseModel):
-    """Output of Step 2 — AI-predicted fraud types and layer strategy."""
+    """Output of Step 2 -- AI-predicted fraud types and layer strategy."""
     predicted_fraud_types: list[FraudType] = Field(default_factory=list)
     layer_priority: list[int] = Field(default_factory=list)
     layer_weights: dict[int, float] = Field(default_factory=dict)

@@ -9,8 +9,10 @@ other modules can do:
 from sentinel.models.account import (
     AccountProfile,
     BaselineStats,
-    ProfileSummary,
+    CommunicationFingerprint,
     RecipientRiskScore,
+    VulnerabilityFactor,
+    VulnerabilityScore,
 )
 from sentinel.models.events import Event, EventType
 from sentinel.models.graph_models import (
@@ -23,6 +25,7 @@ from sentinel.models.graph_models import (
     VelocityReport,
 )
 from sentinel.models.layers import (
+    ExploitationTactic,
     FraudType,
     LayerResult,
     LayerSignal,
@@ -33,6 +36,7 @@ from sentinel.models.report import (
     AlertBundle,
     CaseReport,
     EvidenceBrief,
+    InterventionRecommendation,
     TimelineEntry,
 )
 from sentinel.models.transaction import Transaction, TransactionContext, TransactionType
@@ -48,8 +52,10 @@ __all__ = [
     # account
     "AccountProfile",
     "BaselineStats",
-    "ProfileSummary",
+    "CommunicationFingerprint",
     "RecipientRiskScore",
+    "VulnerabilityFactor",
+    "VulnerabilityScore",
     # graph
     "BrainOverlay",
     "EdgeType",
@@ -59,6 +65,7 @@ __all__ = [
     "NodeType",
     "VelocityReport",
     # layers
+    "ExploitationTactic",
     "FraudType",
     "LayerResult",
     "LayerSignal",
@@ -68,5 +75,6 @@ __all__ = [
     "AlertBundle",
     "CaseReport",
     "EvidenceBrief",
+    "InterventionRecommendation",
     "TimelineEntry",
 ]
