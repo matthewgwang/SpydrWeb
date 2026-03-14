@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -19,22 +18,19 @@ class TransactionType(str, Enum):
 
 class Transaction(BaseModel):
     id: str = Field(default_factory=lambda: uuid4().hex)
+    step: int = 0
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    type: TransactionType = TransactionType.PAYMENT
+    amount: float
     sender_id: str
     receiver_id: str
-    amount: float
-    channel: Optional[str] = None
-    merchant_category: Optional[str] = None
-    description: Optional[str] = None
-
-    # PaySim fields for contextual impossibility checks
-    step: Optional[int] = None
-    type: Optional[TransactionType] = None
-    old_balance_sender: Optional[float] = None
-    new_balance_sender: Optional[float] = None
-    old_balance_receiver: Optional[float] = None
-    new_balance_receiver: Optional[float] = None
-    is_fraud: Optional[bool] = None
+    old_balance_sender: float = 0.0
+    new_balance_sender: float = 0.0
+    old_balance_receiver: float = 0.0
+    new_balance_receiver: float = 0.0
+    is_fraud: bool = False
+    channel: str = "online"
+    description: str = ""
 
 
 class TransactionContext(BaseModel):

@@ -7,21 +7,33 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from sentinel.models.account import AccountProfile
 from sentinel.models.graph_models import BrainOverlay
-from sentinel.models.layers import FraudType, LayerSignal
+from sentinel.models.layers import ExploitationTactic, FraudType, LayerSignal
+from sentinel.models.transaction import Transaction
 
 
 class Action(str, Enum):
-    ALLOW = "ALLOW"
-    CHALLENGE = "CHALLENGE"
-    BLOCK = "BLOCK"
-    REFER = "REFER"
+    ALLOW = "allow"
+    DELAY = "delay"
+    HOLD = "hold"
+    REFER = "refer"
+
+
+class InterventionRecommendation(BaseModel):
+    action: str
+    reason: str
+    urgency: str = "LOW"
+    sensitivity_notes: str = ""
 
 
 class TimelineEntry(BaseModel):
     timestamp: datetime
+    step: int = 0
+    event_type: str = ""
     description: str
-    source_layer: Optional[int] = None
+    layer_source: str = ""
+    significance: str = ""
 
 
 class EvidenceBrief(BaseModel):
@@ -29,19 +41,26 @@ class EvidenceBrief(BaseModel):
     narrative: str = ""
     timeline: list[TimelineEntry] = Field(default_factory=list)
     signals: list[LayerSignal] = Field(default_factory=list)
-    fraud_pattern: str = ""
+    exploitation_tactic: ExploitationTactic = ExploitationTactic.UNKNOWN
+    manipulation_indicators: list[str] = Field(default_factory=list)
+    interventions: list[InterventionRecommendation] = Field(default_factory=list)
     confidence_score: float = Field(0.0, ge=0.0, le=1.0)
+    what_traditional_systems_missed: str = ""
 
 
 class CaseReport(BaseModel):
     id: str = Field(default_factory=lambda: uuid4().hex)
     transaction_id: str
-    evidence_brief: EvidenceBrief = Field(default_factory=EvidenceBrief)
-    brain_overlay: BrainOverlay = Field(default_factory=BrainOverlay)
+    transaction: Optional[Transaction] = None
+    sender_profile: Optional[AccountProfile] = None
+    receiver_profile: Optional[AccountProfile] = None
+    evidence_brief: Optional[EvidenceBrief] = None
+    brain_overlay: Optional[BrainOverlay] = None
     recommended_action: Action = Action.ALLOW
     confidence_score: float = Field(0.0, ge=0.0, le=1.0)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
     fast_pathed: bool = False
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    analyst_feedback: Optional[dict] = None
 
 
 class AlertBundle(BaseModel):
