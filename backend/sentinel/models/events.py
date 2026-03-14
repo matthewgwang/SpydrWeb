@@ -9,18 +9,19 @@ from pydantic import BaseModel, Field
 
 
 class EventType(str, Enum):
-    TRANSACTION = "TRANSACTION"
-    LOGIN = "LOGIN"
-    PASSWORD_RESET = "PASSWORD_RESET"
-    EMAIL_CHANGE = "EMAIL_CHANGE"
-    PAYEE_ADDED = "PAYEE_ADDED"
-    DEVICE_CHANGE = "DEVICE_CHANGE"
-    SUPPORT_CHAT = "SUPPORT_CHAT"
-    BALANCE_CHECK = "BALANCE_CHECK"
-    BRANCH_VISIT = "BRANCH_VISIT"
-    PHONE_CALL = "PHONE_CALL"
-    LIMIT_INQUIRY = "LIMIT_INQUIRY"
-    SETTINGS_CHANGE = "SETTINGS_CHANGE"
+    """Lowercase values to match implementation_details and wiring_guide."""
+    TRANSACTION = "transaction"
+    LOGIN = "login"
+    PASSWORD_RESET = "password_reset"
+    EMAIL_CHANGE = "email_change"
+    PAYEE_ADDED = "payee_added"
+    DEVICE_CHANGE = "device_change"
+    SUPPORT_CHAT = "support_chat"
+    BALANCE_CHECK = "balance_check"
+    BRANCH_VISIT = "branch_visit"
+    PHONE_CALL = "phone_call"
+    LIMIT_INQUIRY = "limit_inquiry"
+    SETTINGS_CHANGE = "settings_change"
 
 
 class Event(BaseModel):

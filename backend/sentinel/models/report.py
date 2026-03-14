@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from sentinel.models.account import AccountProfile
-from sentinel.models.graph_models import BrainOverlay
 from sentinel.models.layers import ExploitationTactic, FraudType, LayerSignal
 from sentinel.models.transaction import Transaction
 
@@ -49,13 +48,14 @@ class EvidenceBrief(BaseModel):
 
 
 class CaseReport(BaseModel):
+    """Per implementation_details: transaction, sender_profile, receiver_profile required; brain_overlay is dict."""
     id: str = Field(default_factory=lambda: uuid4().hex)
     transaction_id: str
-    transaction: Optional[Transaction] = None
-    sender_profile: Optional[AccountProfile] = None
-    receiver_profile: Optional[AccountProfile] = None
+    transaction: Transaction
+    sender_profile: AccountProfile
+    receiver_profile: AccountProfile
     evidence_brief: Optional[EvidenceBrief] = None
-    brain_overlay: Optional[BrainOverlay] = None
+    brain_overlay: Optional[dict[str, Any]] = None
     recommended_action: Action = Action.ALLOW
     confidence_score: float = Field(0.0, ge=0.0, le=1.0)
     fast_pathed: bool = False
