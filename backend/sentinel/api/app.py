@@ -21,7 +21,13 @@ async def lifespan(app: FastAPI):
     from sentinel.accounts.vulnerability import VulnerabilityScorer
     from sentinel.ai.cache import ResponseCache
     from sentinel.ai.gpt_oss_provider import GPTOSSProvider
+    from sentinel.brain.analysis import GraphAnalyzer
     from sentinel.brain.graph import BrainGraph
+    from sentinel.brain.overlay import BrainOverlayEngine
+    from sentinel.brain.velocity import GraphVelocityMonitor
+    from sentinel.layers.graph_layer import GraphLayer
+    from sentinel.layers.rules import RulesLayer
+    from sentinel.layers.stubs import StubLayer, SynthesisStubLayer
     from sentinel.core.alert_manager import AlertManager
     from sentinel.core.event_stream import EventStream
     from sentinel.core.fast_path import FastPathFilter
@@ -43,14 +49,25 @@ async def lifespan(app: FastAPI):
     recipient_scorer = RecipientScorer()
     profile_builder = ProfileBuilder(llm_provider=llm_provider, cache=response_cache)
 
+    # Brain overlay (analysis + velocity + relationship timeline)
+    graph_analyzer = GraphAnalyzer(brain_graph)
+    velocity_monitor = GraphVelocityMonitor(brain_graph)
+    brain_overlay = BrainOverlayEngine(brain_graph, graph_analyzer, velocity_monitor)
+
     # Pipeline services
     fast_path = FastPathFilter()
     score_computer = ScoreComputer()
     alert_manager = AlertManager()
     feedback_store = FeedbackStore()
 
-    # Detection layers (stubs — real implementations come in Phase 1)
-    layers: list = []
+    # Detection layers: Layer 1 (rules), Layer 3 (graph) + stubs for 2, 4, 5
+    layers = [
+        RulesLayer(),
+        StubLayer(2, "profiling"),
+        GraphLayer(brain_graph, graph_analyzer, velocity_monitor),
+        StubLayer(4, "comprehension"),
+        SynthesisStubLayer(),
+    ]
 
     # Orchestrator
     orchestrator = PipelineOrchestrator(
@@ -60,7 +77,7 @@ async def lifespan(app: FastAPI):
         vulnerability_scorer=vulnerability_scorer,
         recipient_scorer=recipient_scorer,
         brain_graph=brain_graph,
-        brain_overlay=brain_graph,  # placeholder until BrainOverlay built
+        brain_overlay=brain_overlay,
         layers=layers,
         fast_path=fast_path,
         score_computer=score_computer,
