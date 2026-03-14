@@ -102,6 +102,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.get("/", tags=["health"])
+    async def health_check():
+        return {"status": "ok"}
+
     from sentinel.api.routes import accounts, demo, feedback, graph, reports, transactions
 
     app.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
