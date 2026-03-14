@@ -1,6 +1,8 @@
 """Persona definitions for SENTINEL synthetic data.
 
-These define the 4 demo accounts with their behavioural characteristics.
+These define the demo accounts with their behavioural characteristics.
+Each persona specifies typical merchants, amount ranges, frequency,
+active hours, devices, login pattern, and communication style.
 """
 
 MARGARET_CHEN = {
@@ -124,4 +126,129 @@ SARAH_WILLIAMS = {
     },
 }
 
-ALL_PERSONAS = [MARGARET_CHEN, ROBERT_WILLIAMS, DAVID_PARK, SARAH_WILLIAMS]
+JAMES_LIU = {
+    "account_id": "C1074160539",
+    "name": "James Liu",
+    "age": 45,
+    "location": "Richmond Hill, ON",
+    "account_created": "2017-09-10",
+    "account_type": "small_business",
+    "behavior": {
+        "avg_amount": 340.00,
+        "std_amount": 450.00,
+        "daily_frequency": 4.2,
+        "typical_hours": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+        "typical_merchants": [
+            "Costco Business Centre",
+            "Staples",
+            "Canada Post",
+            "UPS Store",
+            "ADP Payroll",
+        ],
+        "typical_channels": {"online": 55, "mobile": 35, "branch": 10},
+        "devices": ["dev_james_thinkpad", "dev_james_galaxy"],
+        "balance_check_frequency": 2.0,
+        "transfer_method": "online",
+        "known_payees": [
+            "CRA Business Tax",
+            "Supplier A e-Transfer",
+            "Supplier B e-Transfer",
+            "Landlord Commercial",
+            "ADP Payroll",
+        ],
+        "support_interaction_frequency": 0.3,
+    },
+    "communication_style": {
+        "vocabulary": "technical",
+        "tone": "direct, efficient",
+        "typical_messages": [
+            "I need to increase my daily transfer limit for a supplier payment",
+            "Can you confirm my payroll batch went through?",
+            "My POS terminal isn't connecting — is there an outage?",
+        ],
+    },
+}
+
+PRIYA_SHARMA = {
+    "account_id": "C1305012946",
+    "name": "Priya Sharma",
+    "age": 22,
+    "location": "Waterloo, ON",
+    "account_created": "2024-09-01",
+    "account_type": "retail",
+    "behavior": {
+        "avg_amount": 35.00,
+        "std_amount": 40.00,
+        "daily_frequency": 1.5,
+        "typical_hours": [10, 11, 12, 13, 18, 19, 20, 21, 22],
+        "typical_merchants": [
+            "UW Food Services",
+            "Tim Hortons",
+            "Amazon",
+            "Apple",
+            "LCBO",
+        ],
+        "typical_channels": {"mobile": 80, "online": 20},
+        "devices": ["dev_priya_iphone15"],
+        "balance_check_frequency": 0.2,
+        "transfer_method": "online",
+        "known_payees": [
+            "Rent e-Transfer",
+            "Parents India Wire",
+            "Splitwise Settlement",
+        ],
+        "support_interaction_frequency": 0.05,
+    },
+    "communication_style": {
+        "vocabulary": "technical",
+        "tone": "informal, emoji-heavy",
+        "typical_messages": [
+            "hey can u check why my etransfer didn't go thru??",
+            "i need to send money to india, whats the cheapest way",
+        ],
+    },
+}
+
+HELEN_KOWALSKI = {
+    "account_id": "C1928374650",
+    "name": "Helen Kowalski",
+    "age": 68,
+    "location": "Hamilton, ON",
+    "account_created": "2012-04-20",
+    "account_type": "retail",
+    "behavior": {
+        "avg_amount": 55.00,
+        "std_amount": 30.00,
+        "daily_frequency": 0.6,
+        "typical_hours": [9, 10, 14, 15],
+        "typical_merchants": ["FreshCo", "Dollarama", "Shopper's Drug Mart"],
+        "typical_channels": {"branch": 40, "mobile": 60},
+        "devices": ["dev_helen_ipad_old"],
+        "balance_check_frequency": 0.7,
+        "transfer_method": "branch_only",
+        "known_payees": ["Hydro One", "Bell Canada"],
+        "support_interaction_frequency": 0.1,
+    },
+    "communication_style": {
+        "vocabulary": "simple",
+        "tone": "friendly, chatty",
+        "typical_messages": [
+            "Oh hello dear, I just want to make sure my hydro came out",
+            "Can someone help me with this new phone app?",
+        ],
+    },
+    "vulnerability_factors": [
+        "low_digital_literacy",
+        "rigid_routine",
+    ],
+}
+
+ALL_PERSONAS = [
+    MARGARET_CHEN,
+    ROBERT_WILLIAMS,
+    DAVID_PARK,
+    SARAH_WILLIAMS,
+    JAMES_LIU,
+    PRIYA_SHARMA,
+    HELEN_KOWALSKI,
+]

@@ -2,11 +2,15 @@
 
 Expects the CSV at: datasets/paysim/PS_20174392719_1491204439457_log.csv
 Download from: https://www.kaggle.com/datasets/ealaxi/paysim1
+
+Columns: step, type, amount, nameOrig, oldbalanceOrg, newbalanceOrig,
+nameDest, oldbalanceDest, newbalanceDest, isFraud, isFlaggedFraud
 """
 
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +46,7 @@ class PaySimLoader:
 
     def load_and_sample(
         self,
+        csv_path: str | Path | None = None,
         n_transactions: int = 20_000,
         n_accounts: int = 500,
         min_fraud: int = 50,
@@ -53,16 +58,18 @@ class PaySimLoader:
           - df: sampled DataFrame
           - transactions: list[Transaction]
           - fraud_df: DataFrame of isFraud=1 rows in sample
-          - stats: summary statistics
+          - account_ids: sorted list of customer account IDs (C-prefix)
+          - stats: summary statistics (includes total, fraud for build_all)
         """
-        if not self.is_available():
+        path = Path(csv_path) if csv_path else self.csv_path
+        if not path.exists():
             raise FileNotFoundError(
-                f"PaySim CSV not found at {self.csv_path}. "
+                f"PaySim CSV not found at {path}. "
                 "Download from https://www.kaggle.com/datasets/ealaxi/paysim1"
             )
 
-        logger.info("Loading PaySim CSV from %s ...", self.csv_path)
-        df = pd.read_csv(self.csv_path)
+        logger.info("Loading PaySim CSV from %s ...", path)
+        df = pd.read_csv(path)
         logger.info("Loaded %d rows, %d columns", len(df), len(df.columns))
 
         rng = np.random.default_rng(seed)
@@ -107,12 +114,19 @@ class PaySimLoader:
         # Recompute fraud_df for the sample
         sampled_fraud = account_df[account_df["isFraud"] == 1]
 
+        # Extract account_ids (C-prefix customer accounts) for build_all
+        account_ids = sorted(
+            {aid for aid in sampled_accounts if str(aid).startswith("C")}
+        )
+
         stats = {
             "total_rows_in_csv": len(df),
             "sampled_rows": len(account_df),
             "sampled_accounts": len(sampled_accounts),
             "fraud_rows": len(sampled_fraud),
             "clean_rows": len(account_df) - len(sampled_fraud),
+            "total": len(account_df),
+            "fraud": len(sampled_fraud),
             "type_distribution": account_df["type"].value_counts().to_dict(),
             "fraud_type_distribution": sampled_fraud["type"].value_counts().to_dict(),
         }
@@ -126,6 +140,7 @@ class PaySimLoader:
             "df": account_df,
             "transactions": transactions,
             "fraud_df": sampled_fraud,
+            "account_ids": account_ids,
             "stats": stats,
         }
 
@@ -183,13 +198,54 @@ class PaySimLoader:
 
         return stats
 
+    def find_scenario_candidates(self, transactions: list[Transaction]) -> dict[str, list[Transaction]]:
+        """Identify PaySim fraud patterns that map to our 4 demo scenarios.
+
+        Returns dict keyed by scenario name with lists of candidate
+        transactions suitable for each.
+        """
+        fraud_txns = [t for t in transactions if t.is_fraud]
+
+        large_transfers = [
+            t for t in fraud_txns
+            if t.type == TransactionType.TRANSFER and t.amount > 2000
+        ]
+        cash_outs = [
+            t for t in fraud_txns
+            if t.type == TransactionType.CASH_OUT
+        ]
+        rapid_senders: dict[str, list[Transaction]] = {}
+        for t in fraud_txns:
+            rapid_senders.setdefault(t.sender_id, []).append(t)
+        rapid_burst = [
+            txns for txns in rapid_senders.values() if len(txns) >= 3
+        ]
+        small_merchant: dict[str, list[Transaction]] = {}
+        for t in fraud_txns:
+            if t.amount < 20 and t.receiver_id.startswith("M"):
+                small_merchant.setdefault(t.receiver_id, []).append(t)
+        card_test_merchants = [
+            txns for txns in small_merchant.values() if len(txns) >= 5
+        ]
+
+        return {
+            "elder_exploitation": large_transfers[:10],
+            "account_takeover": cash_outs[:10],
+            "mule_network": [t for batch in rapid_burst[:3] for t in batch],
+            "card_testing": [t for batch in card_test_merchants[:3] for t in batch],
+        }
+
     @staticmethod
     def _df_to_transactions(df: pd.DataFrame) -> list[Transaction]:
+        base_time = datetime(2026, 1, 1, tzinfo=UTC)
         transactions = []
         for _, row in df.iterrows():
+            step = int(row["step"])
+            ts = base_time + timedelta(hours=step)
             tx_type = PAYSIM_TYPE_MAP.get(row["type"], TransactionType.PAYMENT)
             tx = Transaction(
-                step=int(row["step"]),
+                step=step,
+                timestamp=ts,
                 type=tx_type,
                 amount=float(row["amount"]),
                 sender_id=str(row["nameOrig"]),
@@ -199,6 +255,8 @@ class PaySimLoader:
                 old_balance_receiver=float(row["oldbalanceDest"]),
                 new_balance_receiver=float(row["newbalanceDest"]),
                 is_fraud=bool(row["isFraud"]),
+                channel="mobile",
+                description=f"PaySim {row['type']}",
             )
             transactions.append(tx)
         return transactions
