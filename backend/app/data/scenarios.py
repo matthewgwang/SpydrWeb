@@ -25,9 +25,9 @@ def step_to_datetime(step: int) -> datetime:
     return BASE_DATE + timedelta(hours=step)
 
 
-# Default target for elder exploitation (used when no persona provided)
+# Default target for elder exploitation (uses real persona account ID)
 MARGARET_CHEN = {
-    "account_id": "Margaret",
+    "account_id": "C1231006815",
     "name": "Margaret Chen",
     "age": 74,
     "location": "Scarborough, ON",
@@ -43,15 +43,15 @@ JASON_ACCOUNT_ID = "C840083671"
 # Robert Williams — another elderly victim Jason exploited (for fan-in signal)
 ROBERT_ACCOUNT_ID = "C1666544295"
 
-# Account takeover — default victim and mule
+# Account takeover — default victim (uses real persona account ID)
 SARAH_MITCHELL = {
-    "account_id": "Sarah",
-    "name": "Sarah Mitchell",
-    "age": 42,
-    "location": "Toronto, ON",
+    "account_id": "C90045638",
+    "name": "Sarah Williams",
+    "age": 35,
+    "location": "Mississauga, ON",
     "behavior": {
-        "devices": ["dev_sarah_macbook", "dev_sarah_iphone"],
-        "known_payees": ["Rent", "Utilities", "Netflix", "Grocery"],
+        "devices": ["dev_sarah_iphone", "dev_sarah_laptop"],
+        "known_payees": ["Daycare Monthly", "Husband e-Transfer", "Hydro One"],
     },
 }
 

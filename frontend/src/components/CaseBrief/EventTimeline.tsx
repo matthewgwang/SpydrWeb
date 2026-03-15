@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TimelineEntry } from "../../types";
+import Md from "../Md";
 
 interface Props {
   entries: TimelineEntry[];
@@ -80,7 +81,7 @@ export default function EventTimeline({ entries }: Props) {
                     <div className="font-medium text-s-text">
                       {entry.event_type.replace(/_/g, " ")}
                     </div>
-                    <div className="text-s-muted">{entry.description}</div>
+                    <div className="text-s-muted"><Md>{entry.description}</Md></div>
                   </div>
                 )}
               </div>

@@ -113,13 +113,7 @@ def generate_normal_history(
                 step=step_val,
                 event_type=EventType.TRANSACTION,
                 account_id=account_id,
-                payload={
-                    "amount": tx.amount,
-                    "receiver_id": receiver,
-                    "type": tx.type.value,
-                    "channel": channel,
-                    "merchant_category": merchant,
-                },
+                payload={**tx.model_dump(), "merchant_category": merchant},
             ))
 
     transactions.sort(key=lambda t: t.timestamp)

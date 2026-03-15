@@ -30,11 +30,13 @@ class EventStream:
         account_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
         since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
         limit: Optional[int] = None,
     ) -> list[Event]:
         """Filter events. All parameters optional; combine as needed.
 
         Returns events matching all provided filters, sorted by timestamp ascending.
+        ``since`` is inclusive lower bound, ``until`` is inclusive upper bound.
         """
         with self._lock:
             result = self._events
@@ -45,6 +47,8 @@ class EventStream:
             result = [e for e in result if e.event_type == event_type]
         if since is not None:
             result = [e for e in result if e.timestamp >= since]
+        if until is not None:
+            result = [e for e in result if e.timestamp <= until]
 
         result.sort(key=lambda e: e.timestamp)
 
@@ -72,4 +76,4 @@ class EventStream:
         """
         ref = before or datetime.now(UTC)
         since = ref - timedelta(minutes=window_minutes)
-        return self.query(account_id=account_id, since=since)
+        return self.query(account_id=account_id, since=since, until=ref)

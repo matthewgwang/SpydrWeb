@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Play, X, Loader2 } from "lucide-react";
+import { Play, Pause, X, Loader2 } from "lucide-react";
 import type { CaseReport } from "../../types";
 
 interface Props {
   onStart: () => void;
+  onPause: () => void;
   onInject: (scenario: string) => Promise<CaseReport | null>;
   onClose: () => void;
 }
@@ -31,15 +32,22 @@ const SCENARIOS = [
   },
 ];
 
-export default function DemoControls({ onStart, onInject, onClose }: Props) {
-  const [demoStarted, setDemoStarted] = useState(false);
+export default function DemoControls({ onStart, onPause, onInject, onClose }: Props) {
+  const [demoRunning, setDemoRunning] = useState(false);
   const [injecting, setInjecting] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const handleStart = () => {
     onStart();
-    setDemoStarted(true);
+    setDemoRunning(true);
     setLastResult("Stream started");
+    setTimeout(() => setLastResult(null), 3000);
+  };
+
+  const handlePause = () => {
+    onPause();
+    setDemoRunning(false);
+    setLastResult("Stream paused");
     setTimeout(() => setLastResult(null), 3000);
   };
 
@@ -61,27 +69,23 @@ export default function DemoControls({ onStart, onInject, onClose }: Props) {
   return (
     <div className="bg-s-panel-alt border-b border-s-border px-4 py-2">
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleStart}
-          disabled={demoStarted}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition ${
-            demoStarted
-              ? "bg-s-safe-light text-s-safe border border-s-safe/20"
-              : "bg-s-accent text-white hover:bg-s-accent/90"
-          }`}
-        >
-          {demoStarted ? (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-s-safe" />
-              Active
-            </>
-          ) : (
-            <>
-              <Play size={10} />
-              Start
-            </>
-          )}
-        </button>
+        {demoRunning ? (
+          <button
+            onClick={handlePause}
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition bg-s-warn/15 text-s-warn border border-s-warn/30 hover:bg-s-warn/25"
+          >
+            <Pause size={10} />
+            Pause
+          </button>
+        ) : (
+          <button
+            onClick={handleStart}
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition bg-s-accent text-white hover:bg-s-accent/90"
+          >
+            <Play size={10} />
+            Start
+          </button>
+        )}
 
         <div className="h-5 w-px bg-s-border" />
 

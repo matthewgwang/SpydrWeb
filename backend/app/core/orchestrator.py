@@ -59,24 +59,30 @@ class PipelineOrchestrator:
         self.cache = cache
         self.case_reports: list[CaseReport] = []
 
-    async def process(self, transaction: Transaction) -> CaseReport:
-        # Step 1: Log to event stream
-        self.event_stream.append(
-            Event(
-                step=transaction.step,
-                timestamp=transaction.timestamp,
-                event_type=EventType.TRANSACTION,
-                account_id=transaction.sender_id,
-                payload=transaction.model_dump(),
+    async def process(
+        self,
+        transaction: Transaction,
+        *,
+        replay: bool = False,
+    ) -> CaseReport:
+        if not replay:
+            # Step 1: Log to event stream
+            self.event_stream.append(
+                Event(
+                    step=transaction.step,
+                    timestamp=transaction.timestamp,
+                    event_type=EventType.TRANSACTION,
+                    account_id=transaction.sender_id,
+                    payload=transaction.model_dump(),
+                )
             )
-        )
 
-        # Step 2: Update graph
-        self.brain_graph.add_transaction_edge(
-            sender_id=transaction.sender_id,
-            receiver_id=transaction.receiver_id,
-            transaction=transaction,
-        )
+            # Step 2: Update graph
+            self.brain_graph.add_transaction_edge(
+                sender_id=transaction.sender_id,
+                receiver_id=transaction.receiver_id,
+                transaction=transaction,
+            )
 
         # Step 3: Pull / build profiles
         sender_profile = self.account_store.get_profile(transaction.sender_id)
@@ -149,12 +155,21 @@ class PipelineOrchestrator:
                 transaction=transaction,
                 sender_profile=sender_profile,
                 receiver_profile=receiver_profile,
+                layer_signals=rules_list,
                 recommended_action=Action.ALLOW,
                 confidence_score=0.0,
                 fast_pathed=True,
             )
             self.case_reports.append(report)
             return report
+
+        # --- Non-fast-pathed: run deeper analysis ---
+
+        all_signals: list[LayerSignal] = []
+        if isinstance(layer_1_signals, list):
+            all_signals.extend(layer_1_signals)
+        else:
+            all_signals.append(layer_1_signals)
 
         # Step 5: AI predicts exploitation risk -> test plan
         from app.ai.prediction import predict_exploitation_risk
@@ -172,13 +187,7 @@ class PipelineOrchestrator:
         )
 
         # Step 6: Run remaining layers in priority order
-        all_signals: list[LayerSignal] = []
-        if isinstance(layer_1_signals, list):
-            all_signals.extend(layer_1_signals)
-        else:
-            all_signals.append(layer_1_signals)
-
-        layer_map: dict[int, DetectionLayer | None] = {}
+        layer_map = {}
         if len(self.layers) > 1:
             layer_map[2] = self.layers[1]
         if len(self.layers) > 2:
@@ -264,6 +273,7 @@ class PipelineOrchestrator:
             transaction=transaction,
             sender_profile=sender_profile,
             receiver_profile=receiver_profile,
+            layer_signals=all_signals,
             evidence_brief=evidence_brief,
             brain_overlay=overlay_result,
             recommended_action=recommended_action,
@@ -283,3 +293,9 @@ class PipelineOrchestrator:
 
     def get_report(self, report_id: str) -> CaseReport | None:
         return next((r for r in self.case_reports if r.id == report_id), None)
+
+    def get_report_by_transaction(self, transaction_id: str) -> CaseReport | None:
+        return next(
+            (r for r in self.case_reports if r.transaction_id == transaction_id),
+            None,
+        )

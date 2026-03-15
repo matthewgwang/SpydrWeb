@@ -54,6 +54,7 @@ class CaseReport(BaseModel):
     transaction: Transaction
     sender_profile: AccountProfile
     receiver_profile: AccountProfile
+    layer_signals: list[LayerSignal] = Field(default_factory=list)
     evidence_brief: Optional[EvidenceBrief] = None
     brain_overlay: Optional[dict[str, Any]] = None
     recommended_action: Action = Action.ALLOW

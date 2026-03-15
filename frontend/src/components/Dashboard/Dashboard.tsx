@@ -1,84 +1,105 @@
 import { useState, useCallback } from "react";
-import TransactionFeed from "../TransactionFeed/TransactionFeed";
-import AlertQueue from "../AlertQueue/AlertQueue";
-import GraphViewer from "../GraphViewer/GraphViewer";
-import CaseBrief from "../CaseBrief/CaseBrief";
-import { useTransactionFeed } from "../../hooks/useTransactionFeed";
-import { useGraph } from "../../hooks/useGraph";
-import type { CaseReport } from "../../types";
-import { getReport, submitFeedback } from "../../services/api";
+import { useOutletContext } from "react-router-dom";
+import StatsCards from "../StatsCards/StatsCards";
+import TransactionTable from "../TransactionTable/TransactionTable";
+import InvestigationPanel from "../InvestigationPanel/InvestigationPanel";
+import ReportModal from "../ReportModal/ReportModal";
+import type { TransactionFeedItem, AlertFeedItem, CaseReport } from "../../types";
+import { getReport, getReportByTransactionId } from "../../services/api";
+
+interface OutletCtx {
+  transactions: TransactionFeedItem[];
+  alerts: AlertFeedItem[];
+  mode: "pipeline" | "agentic";
+  recentAlertTxIds: Set<string>;
+}
 
 export default function Dashboard() {
-  const { transactions, alerts } = useTransactionFeed();
-  const { graph, loading: graphLoading, fetchNeighbors } = useGraph();
+  const { transactions, alerts, recentAlertTxIds } = useOutletContext<OutletCtx>();
+  const [inspectingTx, setInspectingTx] = useState<TransactionFeedItem | null>(null);
   const [selectedReport, setSelectedReport] = useState<CaseReport | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [alertRefresh, setAlertRefresh] = useState(0);
+  const [reportModalData, setReportModalData] = useState<CaseReport | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleAlertSelect = useCallback(async (reportId: string) => {
+  const fetchReport = useCallback(async (tx: TransactionFeedItem): Promise<CaseReport | null> => {
     try {
-      const report = await getReport(reportId);
-      setSelectedReport(report);
-      setAlertRefresh((n) => n + 1);
-    } catch {}
+      if (tx.report_id) {
+        return await getReport(tx.report_id);
+      }
+      return await getReportByTransactionId(tx.id);
+    } catch {
+      return null;
+    }
   }, []);
 
-  const handleBundleReportSelect = useCallback((report: CaseReport) => {
+  const handleReasoning = useCallback(async (tx: TransactionFeedItem) => {
+    setInspectingTx(tx);
+    setLoading(true);
+    const report = await fetchReport(tx);
     setSelectedReport(report);
+    setLoading(false);
+  }, [fetchReport]);
+
+  const handleReport = useCallback(async (tx: TransactionFeedItem) => {
+    const report = await fetchReport(tx);
+    if (report) setReportModalData(report);
+  }, [fetchReport]);
+
+  const handleClosePanel = useCallback(() => {
+    setInspectingTx(null);
+    setSelectedReport(null);
   }, []);
 
-  const handleNodeSelect = useCallback(
-    (nodeId: string) => {
-      setSelectedNodeId(nodeId);
-      fetchNeighbors(nodeId, 2);
-    },
-    [fetchNeighbors],
-  );
-
-  const handleAnalystAction = useCallback(
-    async (action: string) => {
-      if (!selectedReport) return;
-      try {
-        await submitFeedback({ report_id: selectedReport.id, action });
-        setSelectedReport((prev) =>
-          prev ? { ...prev, analyst_feedback: { action, submitted: true } } : null,
-        );
-      } catch {}
-    },
-    [selectedReport],
-  );
+  const isPanelOpen = inspectingTx !== null;
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left — Feed + Alerts */}
-      <div className="w-[280px] shrink-0 border-r border-s-border flex flex-col bg-s-panel">
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <TransactionFeed
+    <div className="flex flex-col h-full p-3 gap-3 overflow-hidden">
+      <StatsCards transactions={transactions} alerts={alerts} />
+
+      <div className="flex-1 flex gap-3 min-h-0 overflow-hidden">
+        <div
+          className={`flex flex-col min-h-0 overflow-hidden transition-all duration-300 ${
+            isPanelOpen ? "w-1/4 shrink-0" : "flex-1"
+          }`}
+        >
+          <TransactionTable
             transactions={transactions}
-            alerts={alerts}
-            onAlertSelect={handleAlertSelect}
+            compact={isPanelOpen}
+            pinnedId={inspectingTx?.id ?? null}
+            recentAlertTxIds={recentAlertTxIds}
+            onReasoning={handleReasoning}
+            onReport={handleReport}
           />
         </div>
-        <AlertQueue
-          onSelectReport={handleBundleReportSelect}
-          refreshTrigger={alertRefresh}
-        />
+
+        {isPanelOpen && (
+          <div className="w-3/4 min-h-0 overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center h-full bg-s-panel border border-s-border rounded">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-s-accent border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-[11px] text-s-text-tertiary">Loading pipeline trace...</p>
+                </div>
+              </div>
+            ) : selectedReport ? (
+              <InvestigationPanel report={selectedReport} onClose={handleClosePanel} />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-s-panel border border-s-border rounded">
+                <p className="text-[11px] text-s-text-tertiary">
+                  No pipeline data available for this transaction.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Center — Graph */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <GraphViewer
-          graph={graph}
-          loading={graphLoading}
-          onNodeSelect={handleNodeSelect}
-          selectedNodeId={selectedNodeId}
+      {reportModalData && (
+        <ReportModal
+          report={reportModalData}
+          onClose={() => setReportModalData(null)}
         />
-      </div>
-
-      {/* Right — Case Brief */}
-      <div className="w-[340px] shrink-0 border-l border-s-border flex flex-col bg-s-panel">
-        <CaseBrief report={selectedReport} onAction={handleAnalystAction} />
-      </div>
+      )}
     </div>
   );
 }

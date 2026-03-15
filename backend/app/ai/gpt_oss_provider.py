@@ -17,6 +17,7 @@ class GPTOSSProvider(LLMProvider):
         self.client = AsyncOpenAI(
             api_key=settings.LLM_API_KEY,
             base_url=settings.LLM_BASE_URL,
+            timeout=30.0,
         )
         self.model = settings.LLM_MODEL
 

@@ -1,4 +1,5 @@
 import type { AccountProfile as ProfileType } from "../../types";
+import Md from "../Md";
 
 interface Props {
   profile: ProfileType;
@@ -52,9 +53,9 @@ export default function AccountProfile({ profile, role }: Props) {
       </div>
 
       {profile.summary_text && (
-        <p className="text-[10px] text-s-muted leading-relaxed">
+        <Md className="text-[10px] text-s-muted leading-relaxed">
           {profile.summary_text}
-        </p>
+        </Md>
       )}
 
       {/* Vulnerability */}
@@ -77,7 +78,7 @@ export default function AccountProfile({ profile, role }: Props) {
               {vuln.factors.slice(0, 3).map((f, i) => (
                 <div key={i} className="text-[9px] text-s-muted flex justify-between">
                   <span>{f.factor}</span>
-                  <span>{f.description}</span>
+                  <Md>{f.description}</Md>
                 </div>
               ))}
             </div>

@@ -78,7 +78,7 @@ class RulesLayer(DetectionLayer):
             self._check_layering_pattern(transaction, event_stream, ref_time)
         )
 
-        return [s for s in signals if s.triggered]
+        return signals
 
     def _check_velocity(
         self,
@@ -92,17 +92,18 @@ class RulesLayer(DetectionLayer):
             account_id=transaction.sender_id,
             event_type=EventType.TRANSACTION,
             since=cutoff,
+            until=ref_time,
         )
         count = len(txns)
         triggered = count > VELOCITY_THRESHOLD
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="velocity",
             triggered=triggered,
             confidence=0.85 if triggered else 0.0,
-            explanation=f"{count} transfers in 1 hour from account (threshold: {VELOCITY_THRESHOLD})"
+            explanation=f"{count} transfers in 1 hour (threshold: {VELOCITY_THRESHOLD})"
             if triggered
-            else "",
+            else f"{count} transfers in 1 hour — within threshold ({VELOCITY_THRESHOLD})",
             evidence={"count": count, "threshold": VELOCITY_THRESHOLD},
             severity="high" if triggered else "low",
         )
@@ -121,6 +122,7 @@ class RulesLayer(DetectionLayer):
             account_id=transaction.sender_id,
             event_type=EventType.TRANSACTION,
             since=cutoff,
+            until=ref_time,
         )
         daily_total = sum(
             e.payload.get("amount", 0) for e in txns if isinstance(e.payload, dict)
@@ -136,10 +138,11 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="amount_threshold",
             triggered=triggered,
             confidence=0.9 if triggered else 0.0,
-            explanation="; ".join(reasons) if triggered else "",
+            explanation="; ".join(reasons) if triggered
+            else f"Amount ${transaction.amount:,.0f} within limits (single <${AMOUNT_SINGLE_THRESHOLD:,.0f}, daily ${daily_total:,.0f}<${AMOUNT_DAILY_THRESHOLD:,.0f})",
             evidence={
                 "amount": transaction.amount,
                 "daily_total": daily_total,
@@ -163,14 +166,15 @@ class RulesLayer(DetectionLayer):
             account_id=transaction.sender_id,
             event_type=EventType.LOGIN,
             since=ref_time - timedelta(hours=2),
+            until=ref_time,
         )
         if not logins:
             return LayerSignal(
                 layer_id=self.layer_id,
-                layer_name=self.layer_name,
+                layer_name="geo_impossibility",
                 triggered=False,
                 confidence=0.0,
-                explanation="",
+                explanation="No recent logins to compare — geo check not applicable",
                 evidence={},
                 severity="low",
             )
@@ -188,10 +192,10 @@ class RulesLayer(DetectionLayer):
         if not login_locations or not txn_location:
             return LayerSignal(
                 layer_id=self.layer_id,
-                layer_name=self.layer_name,
+                layer_name="geo_impossibility",
                 triggered=False,
                 confidence=0.0,
-                explanation="",
+                explanation="Insufficient location data for geo check",
                 evidence={"note": "Insufficient location data"},
                 severity="low",
             )
@@ -207,12 +211,12 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="geo_impossibility",
             triggered=triggered,
             confidence=0.95 if triggered else 0.0,
-            explanation=f"Login location differs from transaction location within 30 minutes"
+            explanation="Login location differs from transaction location within 30 minutes"
             if triggered
-            else "",
+            else f"Location consistent across {len(logins)} recent login(s)",
             evidence={"login_count": len(logins)},
             severity="high" if triggered else "low",
         )
@@ -229,15 +233,16 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="new_payee_large",
             triggered=triggered,
             confidence=0.8 if triggered else 0.0,
             explanation=f"First transfer to new payee ${transaction.amount:,.0f} > ${NEW_PAYEE_AMOUNT_THRESHOLD:,.0f}"
             if triggered
-            else "",
+            else f"{'Known payee' if not is_new_payee else 'New payee but'} amount ${transaction.amount:,.0f} {'within' if not is_large else 'above'} threshold",
             evidence={
                 "receiver_id": transaction.receiver_id,
                 "amount": transaction.amount,
+                "is_new_payee": is_new_payee,
                 "known_payees": (sender.known_payees or [])[:10],
             },
             severity="medium" if triggered else "low",
@@ -249,12 +254,12 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="blacklist",
             triggered=triggered,
             confidence=0.98 if triggered else 0.0,
             explanation=f"Recipient {transaction.receiver_id} on suspicious blacklist"
             if triggered
-            else "",
+            else "Recipient not on any watchlist",
             evidence={"receiver_id": transaction.receiver_id},
             severity="high" if triggered else "low",
         )
@@ -267,7 +272,7 @@ class RulesLayer(DetectionLayer):
     ) -> LayerSignal:
         """Rule: new device within 24h of password reset or payee addition."""
         cutoff = ref_time - timedelta(hours=24)
-        events = event_stream.query(account_id=transaction.sender_id, since=cutoff)
+        events = event_stream.query(account_id=transaction.sender_id, since=cutoff, until=ref_time)
 
         has_device_change = any(e.event_type == EventType.DEVICE_CHANGE for e in events)
         has_sensitive = any(
@@ -278,12 +283,12 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="device_sensitive",
             triggered=triggered,
             confidence=0.85 if triggered else 0.0,
             explanation="New device within 24h of password reset or payee addition"
             if triggered
-            else "",
+            else "No suspicious device + sensitive action combination",
             evidence={
                 "device_change": has_device_change,
                 "sensitive_action": has_sensitive,
@@ -300,27 +305,27 @@ class RulesLayer(DetectionLayer):
         if transaction.type != TransactionType.TRANSFER:
             return LayerSignal(
                 layer_id=self.layer_id,
-                layer_name=self.layer_name,
+                layer_name="balance_drain",
                 triggered=False,
                 confidence=0.0,
-                explanation="",
-                evidence={},
+                explanation=f"Not a TRANSFER ({transaction.type.value}) — drain check N/A",
+                evidence={"type": transaction.type.value},
                 severity="low",
             )
 
         is_first_time = transaction.receiver_id not in (sender.known_payees or [])
-        balance_zeroed = transaction.new_balance_sender <= 0.01  # allow float tolerance
+        balance_zeroed = transaction.new_balance_sender <= 0.01
 
         triggered = is_first_time and balance_zeroed
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="balance_drain",
             triggered=triggered,
             confidence=0.92 if triggered else 0.0,
             explanation="Account drained to zero after transfer to first-time recipient"
             if triggered
-            else "",
+            else f"Remaining balance ${transaction.new_balance_sender:,.0f} — no drain detected",
             evidence={
                 "new_balance_sender": transaction.new_balance_sender,
                 "receiver_id": transaction.receiver_id,
@@ -339,28 +344,28 @@ class RulesLayer(DetectionLayer):
         if transaction.type != TransactionType.CASH_OUT:
             return LayerSignal(
                 layer_id=self.layer_id,
-                layer_name=self.layer_name,
+                layer_name="layering",
                 triggered=False,
                 confidence=0.0,
-                explanation="",
-                evidence={},
+                explanation=f"Not a CASH_OUT ({transaction.type.value}) — layering check N/A",
+                evidence={"type": transaction.type.value},
                 severity="low",
             )
 
         if transaction.new_balance_sender > 0.01:
             return LayerSignal(
                 layer_id=self.layer_id,
-                layer_name=self.layer_name,
+                layer_name="layering",
                 triggered=False,
                 confidence=0.0,
-                explanation="",
-                evidence={},
+                explanation=f"Balance ${transaction.new_balance_sender:,.0f} not zeroed — no layering",
+                evidence={"new_balance_sender": transaction.new_balance_sender},
                 severity="low",
             )
 
         # Look for recent inbound TRANSFER to this sender with matching amount
         cutoff = ref_time - timedelta(hours=48)
-        all_events = event_stream.query(since=cutoff)
+        all_events = event_stream.query(since=cutoff, until=ref_time)
 
         txn_step = getattr(transaction, "step", 0)
         txn_amount = transaction.amount
@@ -381,7 +386,7 @@ class RulesLayer(DetectionLayer):
             if step_diff <= LAYERING_STEP_WINDOW and abs(ev_amount - txn_amount) < 0.01:
                 return LayerSignal(
                     layer_id=self.layer_id,
-                    layer_name=self.layer_name,
+                    layer_name="layering",
                     triggered=True,
                     confidence=0.95,
                     explanation="CASH_OUT zeroes account within 2 steps of matching inbound TRANSFER (layering pattern)",
@@ -395,10 +400,10 @@ class RulesLayer(DetectionLayer):
 
         return LayerSignal(
             layer_id=self.layer_id,
-            layer_name=self.layer_name,
+            layer_name="layering",
             triggered=False,
             confidence=0.0,
-            explanation="",
+            explanation="No matching inbound TRANSFER found — no layering pattern",
             evidence={},
             severity="low",
         )

@@ -4,6 +4,7 @@ import {
   Phone, Zap, CheckCircle2,
 } from "lucide-react";
 import type { CaseReport, InterventionRecommendation } from "../../types";
+import Md from "../Md";
 import ThreatRadar from "./ThreatRadar";
 import EventTimeline from "./EventTimeline";
 import AccountProfile from "../AccountProfile/AccountProfile";
@@ -96,17 +97,17 @@ function InterventionCard({ intervention }: { intervention: InterventionRecommen
   return (
     <div className={`rounded border ${borderColor} p-2 bg-s-panel`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] text-s-text font-medium leading-tight">
+        <Md className="text-[11px] text-s-text font-medium leading-tight">
           {intervention.action}
-        </p>
+        </Md>
         <span className={`tag ${tagClass} text-[8px] shrink-0`}>
           {intervention.urgency.toUpperCase()}
         </span>
       </div>
       {intervention.sensitivity_notes && (
-        <p className="text-[9px] text-s-muted mt-1 leading-relaxed">
+        <Md className="text-[9px] text-s-muted mt-1 leading-relaxed">
           {intervention.sensitivity_notes}
-        </p>
+        </Md>
       )}
     </div>
   );
@@ -215,9 +216,9 @@ export default function CaseBrief({ report, onAction }: Props) {
                 <h3 className="text-[10px] font-semibold text-s-muted uppercase tracking-wide mb-1">
                   Evidence Summary
                 </h3>
-                <p className="text-[11px] text-s-text-secondary leading-relaxed">
+                <Md className="text-[11px] text-s-text-secondary leading-relaxed">
                   {brief.narrative}
-                </p>
+                </Md>
               </div>
               <hr className="border-s-border" />
             </>
@@ -236,7 +237,7 @@ export default function CaseBrief({ report, onAction }: Props) {
                     return (
                       <div key={i} className="flex items-start gap-2 text-[11px] text-s-text-secondary">
                         <Icon size={12} className="text-s-muted shrink-0 mt-px" />
-                        <span className="leading-tight">{indicator}</span>
+                        <span className="leading-tight"><Md>{indicator}</Md></span>
                       </div>
                     );
                   })}

@@ -45,6 +45,7 @@ class ComprehensionLayer(DetectionLayer):
             account_id=transaction.sender_id,
             event_type=EventType.SUPPORT_CHAT,
             since=transaction.timestamp - timedelta(days=7),
+            until=transaction.timestamp,
         )
 
         if not recent_chats:

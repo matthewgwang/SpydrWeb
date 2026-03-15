@@ -10,6 +10,7 @@ export class FeedSocket {
   private ws: WebSocket | null = null;
   private handlers = new Set<MessageHandler>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private disposed = false;
   private url: string;
 
   constructor(url = `ws://${window.location.host}/ws/feed`) {
@@ -17,6 +18,7 @@ export class FeedSocket {
   }
 
   connect() {
+    if (this.disposed) return;
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
     this.ws = new WebSocket(this.url);
@@ -31,7 +33,9 @@ export class FeedSocket {
     };
 
     this.ws.onclose = () => {
-      this.reconnectTimer = setTimeout(() => this.connect(), 2000);
+      if (!this.disposed) {
+        this.reconnectTimer = setTimeout(() => this.connect(), 2000);
+      }
     };
 
     this.ws.onerror = () => {
@@ -40,6 +44,7 @@ export class FeedSocket {
   }
 
   disconnect() {
+    this.disposed = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.ws?.close();
     this.ws = null;

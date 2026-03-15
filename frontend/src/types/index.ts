@@ -177,6 +177,7 @@ export interface CaseReport {
   transaction: Transaction | null;
   sender_profile: AccountProfile | null;
   receiver_profile: AccountProfile | null;
+  layer_signals: LayerSignal[];
   evidence_brief: EvidenceBrief | null;
   brain_overlay: Record<string, unknown> | null;
   recommended_action: Action;
@@ -232,6 +233,7 @@ export interface TransactionFeedItem {
   step: number;
   timestamp: string;
   type: TransactionType;
+  tx_type?: string;
   amount: number;
   sender_id: string;
   sender_name: string;
@@ -239,6 +241,7 @@ export interface TransactionFeedItem {
   receiver_name: string;
   status: string;
   confidence_score: number;
+  report_id?: string;
 }
 
 export interface AlertFeedItem {

@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Activity, ChevronDown, Play, LayoutDashboard, BarChart3 } from "lucide-react";
+import { Activity, ChevronDown, Play, LayoutDashboard, BarChart3, GitBranch, Settings } from "lucide-react";
 import DemoControls from "../DemoControls/DemoControls";
 import { useTransactionFeed } from "../../hooks/useTransactionFeed";
 import type { CaseReport } from "../../types";
-import { startDemo, injectFraud, setMode } from "../../services/api";
+import { startDemo, pauseDemo, injectFraud, setMode } from "../../services/api";
 
 export default function AppShell() {
-  const { transactions, alerts } = useTransactionFeed();
+  const { transactions, alerts, alertFlash, recentAlertTxIds } = useTransactionFeed();
   const [mode, setModeState] = useState<"pipeline" | "agentic">("pipeline");
   const [showDemo, setShowDemo] = useState(false);
 
@@ -18,6 +18,10 @@ export default function AppShell() {
 
   const handleDemoStart = useCallback(async () => {
     try { await startDemo(); } catch {}
+  }, []);
+
+  const handleDemoPause = useCallback(async () => {
+    try { await pauseDemo(); } catch {}
   }, []);
 
   const handleInjectFraud = useCallback(
@@ -62,6 +66,14 @@ export default function AppShell() {
             <NavLink to="/analytics" className={navLinkClass}>
               <BarChart3 size={10} />
               Analytics
+            </NavLink>
+            <NavLink to="/graph" className={navLinkClass}>
+              <GitBranch size={10} />
+              Graph
+            </NavLink>
+            <NavLink to="/config" className={navLinkClass}>
+              <Settings size={10} />
+              Config
             </NavLink>
           </nav>
 
@@ -128,6 +140,7 @@ export default function AppShell() {
         {showDemo && (
           <DemoControls
             onStart={handleDemoStart}
+            onPause={handleDemoPause}
             onInject={handleInjectFraud}
             onClose={() => setShowDemo(false)}
           />
@@ -136,8 +149,12 @@ export default function AppShell() {
 
       {/* Page Content */}
       <div className="flex-1 overflow-hidden">
-        <Outlet context={{ transactions, alerts, mode }} />
+        <Outlet context={{ transactions, alerts, mode, recentAlertTxIds }} />
       </div>
+
+      {alertFlash && (
+        <div className="fixed inset-0 pointer-events-none z-50 animate-alert-vignette" />
+      )}
     </div>
   );
 }

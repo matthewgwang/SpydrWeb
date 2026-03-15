@@ -26,6 +26,7 @@ interface Props {
   loading: boolean;
   onNodeSelect?: (nodeId: string) => void;
   selectedNodeId?: string | null;
+  compact?: boolean;
 }
 
 const NODE_COLORS: Record<string, string> = {
@@ -98,6 +99,7 @@ export default function GraphViewer({
   loading,
   onNodeSelect,
   selectedNodeId,
+  compact = false,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
@@ -275,10 +277,12 @@ export default function GraphViewer({
 
   return (
     <div className="flex flex-col h-full bg-s-bg">
-      <div className="panel-header bg-s-panel">
-        <h2 className="panel-title">Network Graph</h2>
-        <p className="panel-subtitle">Cross-silo relationship topology</p>
-      </div>
+      {!compact && (
+        <div className="panel-header bg-s-panel">
+          <h2 className="panel-title">Network Graph</h2>
+          <p className="panel-subtitle">Cross-silo relationship topology</p>
+        </div>
+      )}
 
       <div className="flex-1 relative">
         {loading && (

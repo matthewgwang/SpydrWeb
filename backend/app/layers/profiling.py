@@ -117,6 +117,7 @@ class ProfilingLayer(DetectionLayer):
             account_id=account_id,
             event_type=EventType.TRANSACTION,
             since=current_time - timedelta(hours=24),
+            until=current_time,
         )
         today_count = len(today_events)
         if baseline.avg_daily_frequency > 0 and today_count > baseline.avg_daily_frequency * 2:
@@ -168,6 +169,7 @@ class ProfilingLayer(DetectionLayer):
             account_id=account_id,
             event_type=EventType.BALANCE_CHECK,
             since=current_time - timedelta(hours=max_gap_hours),
+            until=current_time,
         )
         if not recent:
             days_missing = max_gap_hours / 24
@@ -198,11 +200,13 @@ class ProfilingLayer(DetectionLayer):
             account_id=account_id,
             event_type=EventType.TRANSACTION,
             since=current_time - timedelta(days=30),
+            until=current_time,
         )
         all_60d = event_stream.query(
             account_id=account_id,
             event_type=EventType.TRANSACTION,
             since=current_time - timedelta(days=60),
+            until=current_time,
         )
         previous_30d = [
             e for e in all_60d if e.timestamp < current_time - timedelta(days=30)

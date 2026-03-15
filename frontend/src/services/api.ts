@@ -29,6 +29,9 @@ export const getAccounts = () =>
 export const getReport = (id: string) =>
   request<CaseReport>(`/reports/${id}`);
 
+export const getReportByTransactionId = (txId: string) =>
+  request<CaseReport>(`/reports/by-transaction/${txId}`);
+
 export const getReports = (limit = 50) =>
   request<CaseReport[]>(`/reports?limit=${limit}`);
 
@@ -54,6 +57,9 @@ export const submitFeedback = (payload: {
 
 export const startDemo = () =>
   request<{ status: string }>("/demo/start", { method: "POST" });
+
+export const pauseDemo = () =>
+  request<{ status: string }>("/demo/pause", { method: "POST" });
 
 export const injectFraud = (scenario: string) =>
   request<CaseReport>(`/demo/inject-fraud/${scenario}`, { method: "POST" });

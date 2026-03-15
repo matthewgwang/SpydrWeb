@@ -1,5 +1,6 @@
 import { Check, AlertTriangle, Circle } from "lucide-react";
 import type { FeedEntry } from "./TransactionFeed";
+import Md from "../Md";
 
 interface Props {
   entry: FeedEntry;
@@ -89,9 +90,9 @@ export default function TransactionCard({ entry, onClick }: Props) {
       )}
 
       {entry.alertSummary && (
-        <p className="text-[10px] text-s-muted mt-0.5 line-clamp-1">
-          {entry.alertSummary}
-        </p>
+        <div className="text-[10px] text-s-muted mt-0.5 line-clamp-1">
+          <Md>{entry.alertSummary}</Md>
+        </div>
       )}
     </div>
   );

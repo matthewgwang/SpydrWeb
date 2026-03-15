@@ -65,9 +65,11 @@ class WorldStateBuilder:
         from app.data.profiles import ALL_PERSONAS
         from app.data.transactions import generate_normal_history
 
-        for persona in ALL_PERSONAS:
+        total = len(ALL_PERSONAS)
+        for idx, persona in enumerate(ALL_PERSONAS, 1):
             account_id = persona["account_id"]
-            logger.info("Building world state for %s (%s)", persona.get("name"), account_id)
+            name = persona.get("name", account_id)
+            print(f"[WORLD] {idx}/{total} Building: {name} ({account_id})")
 
             profile = self.account_store.create_from_persona(persona)
 
@@ -95,15 +97,22 @@ class WorldStateBuilder:
             profile.baseline = baseline
 
             try:
-                profile = await self.profile_builder.build_profile(
-                    account_id, self.event_stream, self.brain_graph
+                import asyncio
+                llm_profile = await asyncio.wait_for(
+                    self.profile_builder.build_profile(
+                        account_id, self.event_stream, self.brain_graph
+                    ),
+                    timeout=15.0,
                 )
                 existing = self.account_store.get_profile(account_id)
                 if existing:
-                    existing.summary_text = profile.summary_text
-                    existing.communication_fingerprint = profile.communication_fingerprint
-            except Exception:
-                logger.warning("LLM profile build failed for %s, using baseline only", account_id)
+                    existing.summary_text = llm_profile.summary_text
+                    existing.communication_fingerprint = llm_profile.communication_fingerprint
+                print(f"[WORLD]   LLM profile OK for {name}")
+            except asyncio.TimeoutError:
+                print(f"[WORLD]   LLM profile timeout for {name}, using baseline")
+            except Exception as exc:
+                print(f"[WORLD]   LLM profile failed for {name}: {exc}")
 
             last_tx_time = (
                 transactions[-1].timestamp if transactions else datetime.now(UTC)
@@ -115,7 +124,7 @@ class WorldStateBuilder:
             if stored:
                 stored.vulnerability = vulnerability
 
-        logger.info("World state built for %d personas", len(ALL_PERSONAS))
+        print(f"[WORLD] Done — {total} personas built")
 
     async def inject_scenario(self, scenario_name: str):
         """Inject a fraud scenario into the live world state.
