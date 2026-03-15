@@ -16,8 +16,8 @@ export default function AppShell() {
     try { await setMode(m); } catch {}
   }, []);
 
-  const handleDemoStart = useCallback(async () => {
-    try { await startDemo(); } catch {}
+  const handleDemoStart = useCallback(async (resume = false) => {
+    try { await startDemo(resume); } catch {}
   }, []);
 
   const handleDemoPause = useCallback(async () => {

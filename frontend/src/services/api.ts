@@ -55,8 +55,8 @@ export const submitFeedback = (payload: {
     body: JSON.stringify(payload),
   });
 
-export const startDemo = () =>
-  request<{ status: string }>("/demo/start", { method: "POST" });
+export const startDemo = (resume = false) =>
+  request<{ status: string }>(`/demo/start?resume=${resume}`, { method: "POST" });
 
 export const pauseDemo = () =>
   request<{ status: string }>("/demo/pause", { method: "POST" });

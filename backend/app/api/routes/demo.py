@@ -132,8 +132,12 @@ async def _demo_stream_task(app):
 
 
 @router.post("/start")
-async def start_demo(request: Request):
-    """Start the demo: begin background processing and streaming of transactions."""
+async def start_demo(request: Request, resume: bool = False):
+    """Start the demo: begin background processing and streaming of transactions.
+
+    If resume=True, continues from where it was paused (fraud may have already been broadcast).
+    If resume=False (default), starts fresh — fraud is always at position 4.
+    """
     app = request.app
 
     if app.state.demo_started:
@@ -142,11 +146,16 @@ async def start_demo(request: Request):
             "reports": len(app.state.orchestrator.case_reports),
         }
 
+    if not resume:
+        app.state._demo_streamed_ids = set()
+        app.state._demo_total_streamed = 0
+        app.state._demo_fraud_done = False
+
     app.state.demo_started = True
     app.state.demo_task = asyncio.create_task(_demo_stream_task(app))
 
     return {
-        "status": "started",
+        "status": "resumed" if resume else "started",
         "accounts": len(app.state.account_store.get_all_profiles()),
         "pre_processed": len(app.state.orchestrator.case_reports),
     }

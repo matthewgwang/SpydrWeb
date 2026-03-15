@@ -3,7 +3,7 @@ import { Play, Pause, X, Loader2 } from "lucide-react";
 import type { CaseReport } from "../../types";
 
 interface Props {
-  onStart: () => void;
+  onStart: (resume?: boolean) => void;
   onPause: () => void;
   onInject: (scenario: string) => Promise<CaseReport | null>;
   onClose: () => void;
@@ -34,19 +34,22 @@ const SCENARIOS = [
 
 export default function DemoControls({ onStart, onPause, onInject, onClose }: Props) {
   const [demoRunning, setDemoRunning] = useState(false);
+  const [wasPaused, setWasPaused] = useState(false);
   const [injecting, setInjecting] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const handleStart = () => {
-    onStart();
+    onStart(wasPaused);
     setDemoRunning(true);
-    setLastResult("Stream started");
+    setWasPaused(false);
+    setLastResult(wasPaused ? "Stream resumed" : "Stream started");
     setTimeout(() => setLastResult(null), 3000);
   };
 
   const handlePause = () => {
     onPause();
     setDemoRunning(false);
+    setWasPaused(true);
     setLastResult("Stream paused");
     setTimeout(() => setLastResult(null), 3000);
   };
