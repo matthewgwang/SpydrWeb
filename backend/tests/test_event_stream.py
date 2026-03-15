@@ -4,8 +4,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from sentinel.core.event_stream import EventStream
-from sentinel.models.events import Event, EventType
+from app.core.event_stream import EventStream
+from app.models.events import Event, EventType
 
 
 def test_append_and_get_all():

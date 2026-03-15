@@ -210,16 +210,16 @@ __marimo__/
 # ===== SENTINEL Project-Specific =====
 
 # Raw datasets (too large for git)
-backend/sentinel/datasets/*.csv
-backend/sentinel/datasets/paysim/*.csv
-backend/sentinel/datasets/ieee_cis/*.csv
-backend/sentinel/datasets/feedzai_baf/*.csv
+backend/app/datasets/*.csv
+backend/app/datasets/paysim/*.csv
+backend/app/datasets/ieee_cis/*.csv
+backend/app/datasets/feedzai_baf/*.csv
 
 # Processed/generated data
-backend/sentinel/processed/
+backend/app/processed/
 
 # LLM response cache
-backend/sentinel/ai/.cache/
+backend/app/ai/.cache/
 
 # Environment files
 .env
