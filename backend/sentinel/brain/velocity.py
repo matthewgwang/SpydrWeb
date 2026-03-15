@@ -8,7 +8,7 @@ Output: VelocityReport (current_velocity, baseline_velocity, deviation_ratio).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sentinel.models.graph_models import VelocityReport
@@ -47,7 +47,7 @@ class GraphVelocityMonitor:
 
         reference_time: if None, uses datetime.utcnow().
         """
-        ref = reference_time or datetime.utcnow()
+        ref = reference_time or datetime.now(UTC)
         cutoff = ref - timedelta(hours=window_hours)
 
         all_data = self._get_all_node_edges(entity_id)
@@ -83,7 +83,7 @@ class GraphVelocityMonitor:
         reference_time: datetime | None = None,
     ) -> VelocityReport:
         """Compare current velocity to baseline. Returns VelocityReport."""
-        ref = reference_time or datetime.utcnow()
+        ref = reference_time or datetime.now(UTC)
         current = self.get_edge_velocity(entity_id, window_hours, ref)
         baseline = self.get_baseline_velocity(entity_id)
 

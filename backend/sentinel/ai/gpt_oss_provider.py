@@ -42,7 +42,7 @@ class GPTOSSProvider(LLMProvider):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                max_tokens=2000,
+                max_tokens=4096,
                 temperature=temperature,
             )
             result = resp.choices[0].message.content
@@ -88,7 +88,7 @@ class GPTOSSProvider(LLMProvider):
                 messages=messages,
                 tools=tools,
                 temperature=temperature,
-                max_tokens=2000,
+                max_tokens=4096,
             )
             choice = resp.choices[0]
             return {

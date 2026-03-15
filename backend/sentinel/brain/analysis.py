@@ -14,7 +14,7 @@ Patterns detected:
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class GraphAnalyzer:
         Returns nodes whose unique inbound sender count in the time window
         exceeds in_degree_threshold.
         """
-        cutoff = datetime.utcnow() - timedelta(hours=time_window_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=time_window_hours)
         recent_edges = self._get_edges_since(cutoff)
 
         inbound: dict[str, set[str]] = defaultdict(set)
@@ -140,7 +140,7 @@ class GraphAnalyzer:
                 "is_burst": False,
             }
 
-        cutoff = datetime.utcnow() - timedelta(hours=window_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=window_hours)
         recent = self._get_node_edges_since(entity_id, cutoff)
         all_edges = self._get_all_node_edges(entity_id)
 
@@ -237,7 +237,7 @@ class GraphAnalyzer:
 
         Classic mule distribution pattern.
         """
-        cutoff = datetime.utcnow() - timedelta(hours=window_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=window_hours)
         recent_out = self._get_node_edges_since(entity_id, cutoff, direction="out")
 
         unique_receivers: set[str] = set()
@@ -271,7 +271,7 @@ class GraphAnalyzer:
 
         Collection point or mule endpoint pattern.
         """
-        cutoff = datetime.utcnow() - timedelta(hours=window_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=window_hours)
         recent_in = self._get_node_edges_since(entity_id, cutoff, direction="in")
 
         unique_senders: set[str] = set()

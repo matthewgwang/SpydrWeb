@@ -21,7 +21,10 @@ async def lifespan(app: FastAPI):
     from sentinel.accounts.vulnerability import VulnerabilityScorer
     from sentinel.ai.cache import ResponseCache
     from sentinel.ai.gpt_oss_provider import GPTOSSProvider
+    from sentinel.brain.analysis import GraphAnalyzer
     from sentinel.brain.graph import BrainGraph
+    from sentinel.brain.overlay import BrainOverlayEngine
+    from sentinel.brain.velocity import GraphVelocityMonitor
     from sentinel.core.alert_manager import AlertManager
     from sentinel.core.event_stream import EventStream
     from sentinel.core.fast_path import FastPathFilter
@@ -30,13 +33,20 @@ async def lifespan(app: FastAPI):
     from sentinel.data.generator import WorldStateBuilder
     from sentinel.feedback.loop import FeedbackStore
     from sentinel.layers.comprehension import ComprehensionLayer
+    from sentinel.layers.graph_layer import GraphLayer
     from sentinel.layers.profiling import ProfilingLayer
+    from sentinel.layers.rules import RulesLayer
+    from sentinel.layers.synthesis import SynthesisLayer
 
     # Core infrastructure
     event_stream = EventStream()
     brain_graph = BrainGraph()
     llm_provider = GPTOSSProvider()
     response_cache = ResponseCache()
+
+    # Brain analysis (shared by Layer 3 and BrainOverlay)
+    graph_analyzer = GraphAnalyzer(brain_graph)
+    velocity_monitor = GraphVelocityMonitor(brain_graph)
 
     # Account services
     account_store = AccountStore()
@@ -45,17 +55,31 @@ async def lifespan(app: FastAPI):
     recipient_scorer = RecipientScorer()
     profile_builder = ProfileBuilder(llm_provider=llm_provider, cache=response_cache)
 
-    # Detection layers (Track A: layers 2 and 4; Track B adds 1, 3, 5 and brain_overlay)
+    # Detection layers [L1, L2, L3, L4, L5]
+    layer_1 = RulesLayer()
     layer_2 = ProfilingLayer(
         baseline_computer=baseline_computer,
         event_stream=event_stream,
+    )
+    layer_3 = GraphLayer(
+        graph=brain_graph,
+        analyzer=graph_analyzer,
+        velocity_monitor=velocity_monitor,
     )
     layer_4 = ComprehensionLayer(
         llm_provider=llm_provider,
         cache=response_cache,
         event_stream=event_stream,
     )
-    layers = [None, layer_2, None, layer_4, None]  # [L1, L2, L3, L4, L5]
+    layer_5 = SynthesisLayer(llm_provider=llm_provider, cache=response_cache)
+    layers = [layer_1, layer_2, layer_3, layer_4, layer_5]
+
+    # Brain overlay (Step 7 structural context)
+    brain_overlay = BrainOverlayEngine(
+        graph=brain_graph,
+        analyzer=graph_analyzer,
+        velocity_monitor=velocity_monitor,
+    )
 
     # Pipeline services
     fast_path = FastPathFilter()
@@ -71,7 +95,7 @@ async def lifespan(app: FastAPI):
         vulnerability_scorer=vulnerability_scorer,
         recipient_scorer=recipient_scorer,
         brain_graph=brain_graph,
-        brain_overlay=None,
+        brain_overlay=brain_overlay,
         layers=layers,
         fast_path=fast_path,
         score_computer=score_computer,

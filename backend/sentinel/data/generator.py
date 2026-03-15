@@ -8,6 +8,7 @@ pipeline is ready to process incoming transactions.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sentinel.data.scenarios import (
@@ -104,7 +105,9 @@ class WorldStateBuilder:
             except Exception:
                 logger.warning("LLM profile build failed for %s, using baseline only", account_id)
 
-            last_tx_time = transactions[-1].timestamp if transactions else None
+            last_tx_time = (
+                transactions[-1].timestamp if transactions else datetime.now(UTC)
+            )
             vulnerability = self.vulnerability_scorer.compute(
                 account_id, profile, self.event_stream, last_tx_time
             )

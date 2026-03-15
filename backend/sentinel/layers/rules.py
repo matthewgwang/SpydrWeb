@@ -6,7 +6,7 @@ Returns a list of signals (one per triggered rule).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sentinel.layers.base import DetectionLayer
@@ -50,7 +50,7 @@ class RulesLayer(DetectionLayer):
         graph: BrainGraph,
     ) -> list[LayerSignal]:
         """Run all rules, return list of triggered signals."""
-        ref_time = transaction.timestamp or datetime.utcnow()
+        ref_time = transaction.timestamp or datetime.now(UTC)
         signals: list[LayerSignal] = []
 
         signals.append(

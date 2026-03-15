@@ -6,7 +6,7 @@ the fraud transaction(s) for the orchestrator to process.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sentinel.models.events import Event, EventType
@@ -17,11 +17,11 @@ if TYPE_CHECKING:
     from sentinel.core.event_stream import EventStream
 
 # Base date for step-to-datetime conversion (1 step = 1 hour)
-BASE_DATE = datetime(2026, 3, 1)
+BASE_DATE = datetime(2026, 3, 1, tzinfo=UTC)
 
 
 def step_to_datetime(step: int) -> datetime:
-    """Convert PaySim step (1 step = 1 hour) to datetime."""
+    """Convert PaySim step (1 step = 1 hour) to datetime (UTC-aware)."""
     return BASE_DATE + timedelta(hours=step)
 
 
