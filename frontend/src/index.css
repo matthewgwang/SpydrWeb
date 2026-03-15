@@ -2,6 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+@layer base {
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}
+
+@layer components {
+  .panel-header {
+    @apply px-3 py-2 border-b border-s-border;
+  }
+
+  .panel-title {
+    @apply text-xs font-semibold text-s-text;
+  }
+
+  .panel-subtitle {
+    @apply text-[10px] text-s-text-tertiary mt-0.5;
+  }
+
+  .tag {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium;
+  }
+
+  .tag-danger {
+    @apply bg-s-danger-light text-s-danger border border-s-danger/20;
+  }
+
+  .tag-warn {
+    @apply bg-s-warn-light text-s-warn border border-s-warn/20;
+  }
+
+  .tag-safe {
+    @apply bg-s-safe-light text-s-safe border border-s-safe/20;
+  }
+
+  .tag-accent {
+    @apply bg-s-accent-light text-s-accent border border-s-accent/20;
+  }
+
+  .tag-neutral {
+    @apply bg-s-surface text-s-muted border border-s-border;
+  }
 }

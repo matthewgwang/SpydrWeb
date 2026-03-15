@@ -7,14 +7,14 @@ interface Props {
 export default function EvidenceBrief({ brief }: Props) {
   return (
     <div className="space-y-3 text-sm">
-      <h3 className="font-semibold">Evidence Brief</h3>
-      <p className="text-gray-300 whitespace-pre-wrap">{brief.narrative}</p>
+      <h3 className="font-semibold text-s-text">Evidence Brief</h3>
+      <p className="text-s-text-secondary whitespace-pre-wrap">{brief.narrative}</p>
       {brief.manipulation_indicators.length > 0 && (
         <div>
-          <h4 className="text-sentinel-warn font-medium">
+          <h4 className="text-s-warn font-medium text-[11px]">
             Manipulation Indicators
           </h4>
-          <ul className="list-disc list-inside text-gray-400">
+          <ul className="list-disc list-inside text-s-muted text-[11px]">
             {brief.manipulation_indicators.map((ind, i) => (
               <li key={i}>{ind}</li>
             ))}

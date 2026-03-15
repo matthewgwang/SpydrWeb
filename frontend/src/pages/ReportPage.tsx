@@ -18,7 +18,7 @@ export default function ReportPage() {
 
   if (!report) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500">
+      <div className="flex items-center justify-center h-screen text-s-text-tertiary">
         Loading report...
       </div>
     );
@@ -26,7 +26,7 @@ export default function ReportPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-xl font-bold">Case Report</h1>
+      <h1 className="text-xl font-bold text-s-text">Case Report</h1>
 
       <ConfidenceScore
         score={report.confidence_score}
