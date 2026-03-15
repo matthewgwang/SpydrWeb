@@ -1,6 +1,82 @@
-import { FileText, X } from "lucide-react";
+import { FileText, X, Zap, AlertTriangle, Shield } from "lucide-react";
 import type { CaseReport } from "../../types";
 import Md from "../Md";
+
+const TACTIC_DISPLAY: Record<string, string> = {
+  family_coercion: "Family Coercion",
+  romance_scam: "Romance Scam",
+  authority_impersonation: "Authority Impersonation",
+  phone_coaching: "Phone Coaching",
+  elder_exploitation: "Elder Exploitation",
+  account_takeover: "Account Takeover",
+  mule_network: "Mule Network",
+  card_testing: "Card Testing",
+};
+
+const RULE_LABELS: Record<string, string> = {
+  velocity: "Velocity Anomaly",
+  amount_threshold: "Amount Threshold",
+  geo_impossibility: "Geographic Impossibility",
+  new_payee_large: "New Payee Large Amount",
+  blacklist: "Blacklist Check",
+  device_sensitive: "Device + Sensitive Action",
+  balance_drain: "Balance Drain",
+  layering: "Layering Pattern",
+};
+
+function ReportSummary({ report }: { report: CaseReport }) {
+  const brief = report.evidence_brief;
+  const tactic = brief?.exploitation_tactic;
+  const hasTactic = tactic && tactic !== "unknown";
+  const triggered = report.layer_signals.filter((s) => s.triggered);
+
+  if (report.fast_pathed) {
+    return (
+      <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50 p-3 flex items-center gap-3">
+        <Zap size={18} className="text-emerald-600 shrink-0" />
+        <div>
+          <div className="text-[11px] font-bold text-emerald-800">Routine Transaction — Fast-Path Applied</div>
+          <div className="text-[9px] text-emerald-700">All criteria met; deeper analysis skipped.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasTactic) {
+    const tacticLabel = TACTIC_DISPLAY[tactic] || tactic.replace(/_/g, " ");
+    return (
+      <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3 flex items-center gap-3">
+        <AlertTriangle size={18} className="text-red-600 shrink-0" />
+        <div>
+          <div className="text-[11px] font-bold text-red-800 capitalize">{tacticLabel}</div>
+          <div className="text-[9px] text-red-700">
+            {brief?.narrative?.split(/[.!?]\s/)[0]?.replace(/[*#_`]/g, "").trim() || "Suspicious activity detected."}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const topSignals = triggered
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 3)
+    .map((s) => RULE_LABELS[s.layer_name] || s.layer_name.replace(/_/g, " "))
+    .join(" + ");
+
+  return (
+    <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-3 flex items-center gap-3">
+      <Shield size={18} className="text-amber-600 shrink-0" />
+      <div>
+        <div className="text-[11px] font-bold text-amber-800">
+          {triggered.length > 0 ? "Suspicious Activity Detected" : "Under Review"}
+        </div>
+        {topSignals && (
+          <div className="text-[9px] text-amber-700">Triggered: {topSignals}</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   report: CaseReport;
@@ -27,6 +103,9 @@ export default function ReportModal({ report, onClose }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-[10px] text-s-text-secondary">
+          {/* Executive summary */}
+          <ReportSummary report={report} />
+
           {/* Document metadata */}
           <div className="bg-s-surface p-3 rounded border border-s-border">
             <strong className="text-s-text">DOCUMENT ID:</strong> SAR-{report.id.slice(0, 12)}<br />
