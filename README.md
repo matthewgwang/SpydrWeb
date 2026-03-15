@@ -14,6 +14,7 @@
 - **Ego-network graph**: Per-transaction relationship graph showing sender/receiver neighborhood
 - **SAR report generation**: System-generated Suspicious Activity Report preview with executive summary
 - **Markdown rendering**: LLM-generated narratives, tables, and formatted text displayed correctly in the UI
+- **Agent loop workflow**: Built with [Railtracks] for agentic orchestration
 
 ---
 
